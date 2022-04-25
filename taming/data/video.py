@@ -39,8 +39,8 @@ class VideoDataset(Dataset):
     def __getitem__(self, idx):
         video, _, _, idx = self._clips.get_clip(idx)
         video = preprocess(video, self.config.size)
-        video = video[0]
-        return dict(video=video)
+        image = video[0]
+        return dict(image=image)
 
         
 class VideoDatasetTrain(VideoDataset):
@@ -56,7 +56,7 @@ def preprocess(video, image_size, sequence_length=None):
 
     resolution = image_size
 
-    video = video.permute(0, 3, 1, 2).float() / 255. # TCHW
+    video = video.movedim(-1, 1).float() / 255. # TCHW
     t, c, h, w = video.shape
 
     # temporal crop
@@ -81,4 +81,4 @@ def preprocess(video, image_size, sequence_length=None):
 
     video = 2 * video - 1 # [0, 1] -> [-1, 1]
 
-    return video
+    return video.movedim(1, -1)

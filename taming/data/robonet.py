@@ -1,18 +1,22 @@
 import os.path as osp
+import numpy as np
 import warnings
 import glob
 import pickle
 import math
+import h5py
 
-import torch.nn.functional as F
+import torch
 from torch.utils.data import Dataset
-from torchvision.datasets.video_utils import VideoClips
+import torch.nn.functional as F
+
+from .metadata_helper import load_metadata
+from .hdf5_loader import load_camera_imgs
 
 
-class VideoDataset(Dataset):
+class RobonetDataset(Dataset):
     """ Generic dataset for video files stored in folders
     Returns BCTHW videos in the range [-1, 1] """
-    exts = ['mp4']
 
     def __init__(self, config, train=True):
         super().__init__()
@@ -20,38 +24,32 @@ class VideoDataset(Dataset):
         self.config = config
         self.seq_len = 4
 
-        folder = osp.join(config.data_path, 'train' if train else 'test')
-        files = glob.glob(osp.join(folder, '*', '*.webm'))
-#        files = sum([glob.glob(osp.join(folder, '*', f'*.{ext}'), recursive=True)
-#                     for ext in self.exts], [])
-        warnings.filterwarnings('ignore')
-        cache_file = osp.join(folder, f"metadata_{self.seq_len}.pkl")
-        if not osp.exists(cache_file):
-            clips = VideoClips(files, self.seq_len, num_workers=48)
-            pickle.dump(clips.metadata, open(cache_file, 'wb'))
+        self.metadata = load_metadata('/home/wilson/data/robonet')
+        n_train = int(0.99 * len(self.metadata))
+        rng = np.random.RandomState(0)
+        idxs = rng.permutation(len(self.metadata))
+        if train:
+            self.idxs = idxs[:n_train]
         else:
-            metadata = pickle.load(open(cache_file, 'rb'))
-            clips = VideoClips(files, self.seq_len,
-                               _precomputed_metadata=metadata)
-        self._clips = clips
+            self.idxs = idxs[n_train:]
 
     def __len__(self):
-        return self._clips.num_clips()
+        return len(self.idxs)
 
     def __getitem__(self, idx):
-        video, _, _, idx = self._clips.get_clip(idx)
-        video = preprocess(video, self.config.size)
-        return dict(image=video)
+        fname = self.metadata.files[self.idxs[idx]]
+        md = self.metadata.get_file_metadata(fname)
 
-        
-class VideoDatasetTrain(VideoDataset):
-    def __init__(self, config):
-        super().__init__(config, train=True)
+        T = min([md['img_T'], md['action_T'] + 1])
+        start_idx = np.random.randint(0, T - self.seq_len + 1)
 
-class VideoDatasetTest(VideoDataset):
-    def __init__(self, config):
-        super().__init__(config, train=False)
-        
+        f = h5py.File(fname, 'r')
+        images = load_camera_imgs(0, f, md, md['frame_dim'], start_idx, self.seq_len)
+        images = torch.FloatTensor(images.copy())
+        images = preprocess(images, self.config.size)
+
+        return dict(image=images)
+
 def preprocess(video, image_size, sequence_length=None):
     # video: THWC, {0, ..., 255}
 
@@ -83,3 +81,12 @@ def preprocess(video, image_size, sequence_length=None):
     video = 2 * video - 1 # [0, 1] -> [-1, 1]
 
     return video.movedim(1, -1)
+
+        
+class RobonetDatasetTrain(RobonetDataset):
+    def __init__(self, config):
+        super().__init__(config, train=True)
+
+class RobonetDatasetTest(RobonetDataset):
+    def __init__(self, config):
+        super().__init__(config, train=False) 

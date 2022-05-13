@@ -1,4 +1,5 @@
 import torch.nn.functional as F
+import random
 import math
 import torch
 from omegaconf import OmegaConf
@@ -11,7 +12,7 @@ from taming.models.vqgan import VQModel
 from cwvae.utils import save_video_grid
 
 
-def preprocess(fname, image_size=256, sequence_length=16):
+def preprocess(fname, image_size=128, sequence_length=16):
     # video: THWC, {0, ..., 255}
 
     video = read_video(fname, pts_unit='sec')[0]
@@ -72,7 +73,9 @@ torch.set_grad_enabled(False)
 config = load_config(osp.join(args.ckpt, 'configs', 'model.yaml'))
 model = load_vqgan(config, ckpt_path=osp.join(args.ckpt, 'ckpts', 'last.ckpt')).to(device)
 
-videos = glob.glob('/home/wilson/ocl/data/something-something/train/*.webm')
+videos = glob.glob('/home/wilson/data/kinetics600/train/*/*.mp4')
+random.seed(0)
+random.shuffle(videos)
 x = torch.stack([preprocess(videos[i]) for i in range(8)], dim=0).to(device)
 B, T = x.shape[:2]
 x_recon = []

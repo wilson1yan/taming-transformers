@@ -28,17 +28,17 @@ model:
 data:
   target: main.DataModuleFromConfig
   params:
-    batch_size: 2
+    batch_size: 16
     num_workers: 8
     train:
-      target: taming.data.video.VideoDatasetTrain
+      target: taming.data.h5py.H5PyDatasetTrain
       params:
         config:
           size: 64
-          data_path: /home/wilson/data/something-something
+          data_path: /home/wilson/data/bair.hdf5
     validation:
-      target: taming.data.video.VideoDatasetTest
+      target: taming.data.h5py.H5PyDatasetTest
       params:
         config:
           size: 64
-          data_path: /home/wilson/data/something-something
+          data_path: /home/wilson/data/bair.hdf5

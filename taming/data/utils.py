@@ -123,7 +123,6 @@ def quadratic_crop(x, bbox, alpha=1.0):
 
 def custom_collate(batch):
     r"""source: pytorch 1.9.0, only one modification to original code """
-
     elem = batch[0]
     elem_type = type(elem)
     if isinstance(elem, torch.Tensor):
@@ -134,7 +133,7 @@ def custom_collate(batch):
             numel = sum([x.numel() for x in batch])
             storage = elem.storage()._new_shared(numel)
             out = elem.new(storage)
-        return torch.stack(batch, 0, out=out)
+        return torch.cat(batch, 0, out=out)
     elif elem_type.__module__ == 'numpy' and elem_type.__name__ != 'str_' \
             and elem_type.__name__ != 'string_':
         if elem_type.__name__ == 'ndarray' or elem_type.__name__ == 'memmap':

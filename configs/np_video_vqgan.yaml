@@ -7,11 +7,11 @@ model:
     ddconfig:
       double_z: False
       z_channels: 256
-      resolution: 128
+      resolution: 64
       in_channels: 3
       out_ch: 3
       ch: 128
-      ch_mult: [1,2,2,2]  # num_down = len(ch_mult)-1
+      ch_mult: [1,2,2]  # num_down = len(ch_mult)-1
       num_res_blocks: 2
       attn_resolutions: [16]
       dropout: 0.0
@@ -31,14 +31,14 @@ data:
     batch_size: 2
     num_workers: 8
     train:
-      target: taming.data.video.VideoDatasetTrain
+      target: taming.data.np_video.NumpyVideoDatasetTrain
       params:
         config:
-          size: 128
-          data_path: /home/wilson/data/bdd100k_r128
+          size: 64
+          data_path: /home/wilson/data/gqn_mazes
     validation:
-      target: taming.data.video.VideoDatasetTest
+      target: taming.data.np_video.NumpyVideoDatasetTest
       params:
         config:
-          size: 128
-          data_path: /home/wilson/data/bdd100k_r128
+          size: 64
+          data_path: /home/wilson/data/gqn_mazes

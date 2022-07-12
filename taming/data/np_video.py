@@ -1,18 +1,18 @@
 import os.path as osp
+import numpy as np
 import warnings
 import glob
 import pickle
 import math
 
+import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
-from torchvision.datasets.video_utils import VideoClips
 
 
-class VideoDataset(Dataset):
+class NumpyVideoDataset(Dataset):
     """ Generic dataset for video files stored in folders
     Returns BCTHW videos in the range [-1, 1] """
-    exts = ['mp4']
 
     def __init__(self, config, train=True):
         super().__init__()
@@ -21,35 +21,28 @@ class VideoDataset(Dataset):
         self.seq_len = 4
 
         folder = osp.join(config.data_path, 'train' if train else 'test')
-        files = glob.glob(osp.join(folder, '**', '*.mp4'), recursive=True)
+        files = glob.glob(osp.join(folder, '**', '*.npz'), recursive=True)
+        self.files = files
         print('Found', len(files))
-#        files = sum([glob.glob(osp.join(folder, '*', f'*.{ext}'), recursive=True)
-#                     for ext in self.exts], [])
-        warnings.filterwarnings('ignore')
-        cache_file = osp.join(folder, f"metadata_{self.seq_len}.pkl")
-        if not osp.exists(cache_file):
-            clips = VideoClips(files, self.seq_len, num_workers=48)
-            pickle.dump(clips.metadata, open(cache_file, 'wb'))
-        else:
-            metadata = pickle.load(open(cache_file, 'rb'))
-            clips = VideoClips(files, self.seq_len,
-                               _precomputed_metadata=metadata)
-        self._clips = clips
 
     def __len__(self):
-        return self._clips.num_clips()
+        return len(self.files)
 
     def __getitem__(self, idx):
-        video, _, _, idx = self._clips.get_clip(idx)
+        data = np.load(self.files[idx])
+        video = data['video']
+        start = np.random.randint(low=0, high=video.shape[0] - self.seq_len)
+        video = video[start:start + self.seq_len]
+        video = torch.from_numpy(video)
         video = preprocess(video, self.config.size)
         return dict(image=video)
 
         
-class VideoDatasetTrain(VideoDataset):
+class NumpyVideoDatasetTrain(NumpyVideoDataset):
     def __init__(self, config):
         super().__init__(config, train=True)
 
-class VideoDatasetTest(VideoDataset):
+class NumpyVideoDatasetTest(NumpyVideoDataset):
     def __init__(self, config):
         super().__init__(config, train=False)
         

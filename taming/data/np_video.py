@@ -60,13 +60,13 @@ def preprocess(video, image_size, sequence_length=None):
         video = video[:sequence_length]
 
     # scale shorter side to resolution
-    scale = resolution / min(h, w)
-    if h < w:
-        target_size = (resolution, math.ceil(w * scale))
-    else:
-        target_size = (math.ceil(h * scale), resolution)
-    video = F.interpolate(video, size=target_size, mode='bilinear',
-                          align_corners=False)
+#    scale = resolution / min(h, w)
+#    if h < w:
+#        target_size = (resolution, math.ceil(w * scale))
+#    else:
+#        target_size = (math.ceil(h * scale), resolution)
+#    video = F.interpolate(video, size=target_size, mode='bilinear',
+#                          align_corners=False)
 
     # center crop
     t, c, h, w = video.shape

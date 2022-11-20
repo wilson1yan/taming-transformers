@@ -21,7 +21,7 @@ model:
       params:
         disc_conditional: False
         disc_in_channels: 3
-        disc_start: 100001
+        disc_start: 50001
         disc_weight: 0.8
         codebook_weight: 1.0
 
@@ -35,10 +35,10 @@ data:
       params:
         config:
           size: 64
-          data_path: /home/wilson/data/gqn_mazes
+          data_path: /home/wilson/data/dmlab_green
     validation:
       target: taming.data.np_video.NumpyVideoDatasetTest
       params:
         config:
           size: 64
-          data_path: /home/wilson/data/gqn_mazes
+          data_path: /home/wilson/data/dmlab_green

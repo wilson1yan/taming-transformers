@@ -56,7 +56,7 @@ class VQModel(pl.LightningModule):
         h = self.encoder(x)
         h = self.quant_conv(h)
         quant, emb_loss, info = self.quantize(h)
-        return quant, emb_loss, info
+        return quant, (emb_loss, info)
 
     def decode(self, quant):
         quant = self.post_quant_conv(quant)
@@ -69,9 +69,9 @@ class VQModel(pl.LightningModule):
         return dec
 
     def forward(self, input):
-        quant, diff, _ = self.encode(input)
+        quant, (diff, info) = self.encode(input)
         dec = self.decode(quant)
-        return dec, diff
+        return dec, (diff, info)
 
     def get_input(self, batch, k):
         x = batch[k]
@@ -82,7 +82,8 @@ class VQModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         x = self.get_input(batch, self.image_key)
-        xrec, qloss = self(x)
+        xrec, (qloss, info) = self(x)
+        self.log("train/perplexity", info[0], prog_bar=True, logger=True, on_step=True, on_epoch=True)
 
         if optimizer_idx == 0:
             # autoencode
@@ -90,7 +91,7 @@ class VQModel(pl.LightningModule):
                                             last_layer=self.get_last_layer(), split="train")
 
             self.log("train/aeloss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
-            self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True)
+            self.log_dict(log_dict_ae, prog_bar=True, logger=True, on_step=True, on_epoch=True)
             return aeloss
 
         if optimizer_idx == 1:
@@ -103,7 +104,7 @@ class VQModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x = self.get_input(batch, self.image_key)
-        xrec, qloss = self(x)
+        xrec, (qloss, _) = self(x)
         aeloss, log_dict_ae = self.loss(qloss, x, xrec, 0, self.global_step,
                                             last_layer=self.get_last_layer(), split="val")
 

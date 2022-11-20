@@ -220,7 +220,7 @@ class VectorQuantizer2(nn.Module):
     # backwards compatibility we use the buggy version by default, but you can
     # specify legacy=False to fix it.
     def __init__(self, n_e, e_dim, beta, remap=None, unknown_index="random",
-                 sane_index_shape=False, legacy=True):
+                 sane_index_shape=False, legacy=False):
         super().__init__()
         self.n_e = n_e
         self.e_dim = e_dim
@@ -287,6 +287,10 @@ class VectorQuantizer2(nn.Module):
         z_q = self.embedding(min_encoding_indices).view(z.shape)
         perplexity = None
         min_encodings = None
+
+        encodings_one_hot = F.one_hot(min_encoding_indices, self.n_e).float()
+        avg_probs = encodings_one_hot.mean(dim=0)
+        perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
 
         # compute loss for embedding
         if not self.legacy:

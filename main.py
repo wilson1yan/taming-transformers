@@ -539,7 +539,7 @@ if __name__ == "__main__":
         accumulate_grad_batches = lightning_config.trainer.accumulate_grad_batches or 1
         print(f"accumulate_grad_batches = {accumulate_grad_batches}")
         lightning_config.trainer.accumulate_grad_batches = accumulate_grad_batches
-        model.learning_rate = accumulate_grad_batches * ngpu * bs * base_lr * 4
+        model.learning_rate = accumulate_grad_batches * ngpu * bs * base_lr * 1
         print("Setting learning rate to {:.2e} = {} (accumulate_grad_batches) * {} (num_gpus) * {} (batchsize) * 4 * {:.2e} (base_lr)".format(
             model.learning_rate, accumulate_grad_batches, ngpu, bs, base_lr))
 
